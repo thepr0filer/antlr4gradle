@@ -1,0 +1,73 @@
+group "$rootProjectNameSpace.$rootProject.name"
+version '1.0.0'
+
+buildscript {
+    ext.kotlin_version = '1.1.51'
+
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'kotlin'
+apply plugin: 'maven'
+
+configurations {
+    antlr
+}
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
+    antlr 'org.antlr:antlr4:4.7'
+    compile 'org.antlr:antlr4-runtime:4.7'
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+task('generateLang', type: JavaExec) {
+    // only one grammar, but could do more or all in folder, as configured
+    def rootProjectNameSpace = rootProject.properties["rootProjectNameSpace"]
+    def rootProjectNameSpaceDir = rootProjectNameSpace.replaceAll("\\.","/")
+    def gn = rootProject.properties["rootProjectGrammarName"]
+    def g4FileName = "${gn}.g4"
+
+    inputs.file new File(g4FileName)
+    outputs.dir new File("src/main/java/$rootProjectNameSpaceDir/$rootProject.name/lang/")
+
+    classpath configurations.antlr
+
+    workingDir = new File('src/main/lang')
+
+    main = 'org.antlr.v4.Tool'
+    args = ['-package', "$rootProjectNameSpace.${rootProject.name}.lang.${rootProject.properties["rootProjectGrammarName"]}",
+            '-o', "../java/$rootProjectNameSpaceDir/$rootProject.name/lang/$gn",
+            g4FileName]
+}
+
+task('cleanLang', type: Delete) {
+    // cleans only the targeted grammar folder
+    def gn = rootProject.properties["rootProjectGrammarName"]
+    def rootProjectNameSpaceDir = rootProject.properties["rootProjectNameSpace"].replaceAll("\\.","/")
+    delete fileTree(dir: "src/main/java/$rootProjectNameSpaceDir/$rootProject.name/lang/$gn")
+}
+
+clean.dependsOn 'cleanLang'
+build.dependsOn 'generateLang'

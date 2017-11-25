@@ -1,3 +1,13 @@
+# IntelliJ
+/.idea/
+/.gradle/
+/gradle/
+*.iml
+
+# Batch and other
+*.bat
+*.sh
+
 # Compiled class file
 *.class
 
